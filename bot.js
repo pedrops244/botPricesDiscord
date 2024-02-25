@@ -19,7 +19,7 @@ client.on("ready", () => {
 client.on("messageCreate", async (message) => {
   if (message.content.startsWith("!preco")) {
     const query = message.content.slice("!preco".length).trim();
-    if (query.length < 20) {
+    if (query.length < 30) {
       return message.channel.send(
         "Oops! Seu pedido precisa de mais detalhes, como modelo, marca, cor, etc. 🙈"
       );
