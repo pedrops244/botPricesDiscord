@@ -1,6 +1,8 @@
 import { Client, GatewayIntentBits } from "discord.js";
 import { Builder, By, until } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 const client = new Client({
   intents: [
@@ -90,6 +92,4 @@ async function fetchPrice(query, url, selector) {
   }
 }
 
-client.login(
-  "MTIxMTAyMzM0MTY3MTAzMDkxNA.GG7nEG.po4iGNnhkouJr2KRgG6pepJzqGNgssGX4mPtLM"
-);
+client.login(process.env.DISCORD_TOKEN);
