@@ -17,55 +17,79 @@ client.on("ready", () => {
 });
 
 client.on("messageCreate", async (message) => {
-  if (message.content.length < 20) {
-    return message.channel.send(
-      "Oops! Seu pedido precisa de mais detalhes, como modelo, marca, cor, etc. 🙈"
-    );
-  }
-
   if (message.content.startsWith("!preco")) {
+    const query = message.content.slice("!preco".length).trim();
+    if (query.length < 20) {
+      return message.channel.send(
+        "Oops! Seu pedido precisa de mais detalhes, como modelo, marca, cor, etc. 🙈"
+      );
+    }
+
     message.channel.send(
-      `${client.user.displayName} está farejando os preços, aguarde! 🙉`
-    );
-    const query = message.content.slice("!preco".length);
-    const amazonPrice = await fetchPrice(
-      query,
-      "https://www.amazon.com.br/s?k=",
-      "span.a-price-whole"
+      `${client.user.username} está farejando os preços, aguarde! 🙉`
     );
 
-    // const pichauPrice = await fetchPrice(
-    //   query.replace(/(^\s+|\s+$)/g, "").replace(/ /g, "%20"),
-    //   "https://www.pichau.com.br/search?q=",
-    //   "//*[contains(text(), 'no PIX com 15% desconto')]/parent::*"
-    // );
+    const prices = await fetchPrices(query);
 
-    const kabumPrice = await fetchPrice(
-      query.replace(/ /g, "-"),
-      "https://www.kabum.com.br/busca/",
-      ".priceCard"
-    );
-    const mercadoLivrePrice = await fetchPrice(
-      query.replace(/ /g, "-"),
-      "https://lista.mercadolivre.com.br/",
-      ".andes-money-amount__fraction"
-    );
-    const aliexpressPrice = await fetchPrice(
-      query.replace(/(^\s+|\s+$)/g, "").replace(/ /g, "%20"),
-      "https://www.aliexpress.com/wholesale?SearchText=",
-      ".multi--price-sale--U-S0jtj"
-    );
+    const color = parseInt("0099ff", 16);
 
-    message.channel.send(`
-      Amazon: R$ ${amazonPrice}
-      Kabum: ${kabumPrice}
-      MercadoLivre: R$ ${mercadoLivrePrice}
-      AliExpress: ${aliexpressPrice}
-    `);
+    const embed = {
+      color: color,
+      title: `Resultados da pesquisa para: ${query}`,
+      description: "Aqui estão os preços encontrados:",
+      fields: [
+        {
+          name: "Amazon",
+          value: `${formatPrices(
+            prices.amazon,
+            "R$ "
+          )}\n[Ver mais resultados](https://www.amazon.com.br/s?k=${encodeURIComponent(
+            query
+          )})`,
+          inline: true,
+        },
+        {
+          name: "Kabum",
+          value: `${formatPrices(
+            prices.kabum,
+            ""
+          )}\n[Ver mais resultados](https://www.kabum.com.br/busca?query=${encodeURIComponent(
+            query.replace(/ /g, "-")
+          )})`,
+          inline: true,
+        },
+        {
+          name: "Mercado Livre",
+          value: `${formatPrices(
+            prices.mercadoLivre,
+            "R$ "
+          )}\n[Ver mais resultados](https://lista.mercadolivre.com.br/${encodeURIComponent(
+            query.replace(/ /g, "-")
+          )})`,
+          inline: true,
+        },
+        {
+          name: "AliExpress",
+          value: `${formatPrices(
+            prices.aliexpress,
+            ""
+          )}\n[Ver mais resultados](https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(
+            query
+          )})`,
+          inline: true,
+        },
+      ],
+      timestamp: new Date(),
+      footer: {
+        text: "Preços sujeitos a alteração.",
+      },
+    };
+
+    message.channel.send({ embeds: [embed] });
   }
 });
 
-async function fetchPrice(query, url, selector) {
+async function fetchPrices(query) {
   let options = new chrome.Options();
   options.addArguments("--no-sandbox");
   options.addArguments("--disable-gpu");
@@ -78,18 +102,60 @@ async function fetchPrice(query, url, selector) {
     .build();
 
   try {
-    await driver.get(url + encodeURIComponent(query));
-    await driver.wait(until.elementLocated(By.css(selector)), 10000);
+    const amazonPrice = await fetchPrice(
+      driver,
+      "https://www.amazon.com.br/s?k=",
+      query,
+      "span.a-price-whole"
+    );
+    const kabumPrice = await fetchPrice(
+      driver,
+      "https://www.kabum.com.br/busca/",
+      query.replace(/ /g, "-"),
+      ".priceCard"
+    );
+    const mercadoLivrePrice = await fetchPrice(
+      driver,
+      "https://lista.mercadolivre.com.br/",
+      query.replace(/ /g, "-"),
+      ".andes-money-amount__fraction"
+    );
+    const aliexpressPrice = await fetchPrice(
+      driver,
+      "https://www.aliexpress.com/wholesale?SearchText=",
+      query,
+      ".multi--price-sale--U-S0jtj"
+    );
 
-    const priceElement = await driver.findElement(By.css(selector));
-    const price = await priceElement.getText();
-    return price || "Preço não encontrado";
-  } catch (error) {
-    console.error(`Erro ao buscar preço: ${error}`);
-    return "Erro ao buscar preço";
+    return {
+      amazon: amazonPrice,
+      kabum: kabumPrice,
+      mercadoLivre: mercadoLivrePrice,
+      aliexpress: aliexpressPrice,
+    };
   } finally {
     await driver.quit();
   }
+}
+
+async function fetchPrice(driver, url, query, selector) {
+  await driver.get(url + encodeURIComponent(query));
+  await driver.wait(until.elementLocated(By.css(selector)), 10000);
+
+  let prices = [];
+  const priceElements = await driver.findElements(By.css(selector));
+  for (let priceElement of priceElements.slice(0, 5)) {
+    const price = await priceElement.getText();
+    prices.push(price);
+  }
+
+  return prices.length > 0 ? prices : ["Preço não encontrado"];
+}
+
+function formatPrices(prices, currency) {
+  return prices
+    .map((price, index) => `${index + 1}: ${currency}${price}`)
+    .join("\n");
 }
 
 client.login(process.env.DISCORD_TOKEN);
