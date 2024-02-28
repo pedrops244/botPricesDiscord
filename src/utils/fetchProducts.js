@@ -39,7 +39,18 @@ export async function fetchProducts(
       : encodeURIComponent(query);
     await driver.get(url + formattedQuery);
 
-    // Verifica a presença de elementos de produto ou espera até o timeout
+    const isEmptyOrTimeout = await Promise.race([
+      driver
+        .findElements(By.css("div#listingEmpty, div.ui-search-icon--not-found"))
+        .then((elements) => elements.length > 0),
+      driver.wait(until.elementLocated(By.css(linkSelector)), 10000).then(
+        () => false,
+        () => true
+      ),
+    ]);
+    if (isEmptyOrTimeout) {
+      return noProductResponse();
+    }
     await driver
       .wait(until.elementLocated(By.css(linkSelector)), 10000)
       .catch(() => {});

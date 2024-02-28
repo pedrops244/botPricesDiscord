@@ -30,7 +30,7 @@ client.on("messageCreate", async (message) => {
     }
     try {
       message.channel.send(
-        `${client.user.username} está procurando os melhores preços para você...`
+        `${client.user.username} está farejando os preços, aguarde! 🙉`
       );
 
       const kabumProducts = await fetchProducts(
