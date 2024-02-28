@@ -1,10 +1,10 @@
 import { Client, GatewayIntentBits } from "discord.js";
 import dotenv from "dotenv";
-import { fetchProducts } from "./utils/fetchProducts.js";
-import { COLORS } from "./config/colors.js";
-import { formatProducts } from "./utils/formatProducts.js";
-import { createEmbed } from "./utils/createEmbed.js";
-import { sendEmbedForStore } from "./utils/sendEmbedForStore.js";
+import { fetchProducts } from "./src/utils/fetchProducts.js";
+import { COLORS } from "./src/config/colors.js";
+import { formatProducts } from "./src/utils/formatProducts.js";
+import { createEmbed } from "./src/utils/createEmbed.js";
+import { sendEmbedForStore } from "./src/utils/sendEmbedForStore.js";
 
 dotenv.config();
 

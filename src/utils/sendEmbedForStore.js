@@ -37,7 +37,7 @@ export async function sendEmbedForStore(
       if (embedSize > 4096) {
         // Se o tamanho do embed exceder o limite, ajusta a descrição
         embed = createEmbed({
-          color: COLORS.WARNING,
+          color: COLORS.SUCCESS,
           title: "Limite de caracteres excedido",
           description: `Os resultados da pesquisa para "${query}" em ${storeName} não podem ser exibidos aqui devido ao limite de tamanho. Por favor, [clique aqui para ver todos os produtos](${baseUrl}${encodeURIComponent(
             query

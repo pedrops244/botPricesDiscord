@@ -3,4 +3,5 @@ export const COLORS = {
   KABUM: parseInt("FF9900", 16),
   MERCADO_LIVRE: parseInt("FFFF00", 16),
   WARNING: parseInt("FF0000", 16),
+  SUCCESS: parseInt("00FF00", 16),
 };
