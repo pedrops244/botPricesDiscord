@@ -110,10 +110,8 @@ async function fetchProducts(
     await driver.wait(until.elementLocated(By.css(linkSelector)), 10000);
 
     let products = [];
-    // Encontre os elementos que contêm todos os dados necessários de cada produto. Isso pode precisar de ajuste.
     const productElements = await driver.findElements(By.css(cardSelector));
     for (let productElement of productElements.slice(0, 5)) {
-      // Limita a 5 produtos para manter a saída gerenciável
       let product = {};
 
       const linkElement = await productElement
