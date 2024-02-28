@@ -7,7 +7,9 @@ export async function createWebDriver() {
     "--no-sandbox",
     "--disable-gpu",
     "--disable-dev-shm-usage",
-    "--enable-chrome-browser-cloud-management"
+    "--enable-chrome-browser-cloud-management",
+    "--incognito",
+    "--headless"
   );
   return new Builder().forBrowser("chrome").setChromeOptions(options).build();
 }
