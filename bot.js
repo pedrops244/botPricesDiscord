@@ -107,35 +107,55 @@ async function fetchProducts(
 
   try {
     await driver.get(url + encodeURIComponent(query));
-    await driver.wait(until.elementLocated(By.css(linkSelector)), 10000);
 
+    // Verifica simultaneamente por um elemento que indica página vazia e pela presença do linkSelector.
+    const isEmptyOrTimeout = await Promise.race([
+      driver
+        .findElements(By.css(".listingEmpty, .no-results-indicator"))
+        .then((elements) => elements.length > 0),
+      driver.wait(until.elementLocated(By.css(linkSelector)), 10000).then(
+        () => false,
+        () => true
+      ),
+    ]);
+
+    if (isEmptyOrTimeout) {
+      return [
+        {
+          link: "Link do produto não encontrado",
+          price: "Preço não encontrado",
+          title: "Nenhum produto encontrado para sua pesquisa.",
+        },
+      ];
+    }
+
+    // Coleta os dados dos produtos.
     let products = [];
-    const productElements = await driver.findElements(By.css(cardSelector));
+    const productElements = await driver
+      .findElements(By.css(cardSelector))
+      .catch(() => []);
     for (let productElement of productElements.slice(0, 5)) {
-      let product = {};
+      let product = {
+        link: await productElement
+          .findElement(By.css(linkSelector))
+          .getAttribute("href")
+          .catch(() => "Link não encontrado"),
+        price: await productElement
+          .findElement(By.css(priceSelector))
+          .getText()
+          .catch(() => "Preço não encontrado"),
+        title: await productElement
+          .findElement(By.css(titleSelector))
+          .getText()
+          .catch(() => "Título não encontrado"),
+      };
 
-      const linkElement = await productElement
-        .findElement(By.css(linkSelector))
-        .catch(() => null);
-      const priceElement = await productElement
-        .findElement(By.css(priceSelector))
-        .catch(() => null);
-      const titleElement = await productElement
-        .findElement(By.css(titleSelector))
-        .catch(() => null);
-
-      product.link = linkElement
-        ? await linkElement.getAttribute("href")
-        : "Link não encontrado";
-      product.price = priceElement
-        ? await priceElement.getText()
-        : "Preço não encontrado";
-      product.title = titleElement
-        ? await titleElement.getText()
-        : "Título não encontrado";
-
-      // Adiciona o produto apenas se pelo menos um dos dados (link, preço ou título) foi encontrado.
-      if (linkElement || priceElement || titleElement) {
+      // Verifica se pelo menos um dos dados (link, preço ou título) foi encontrado antes de adicionar.
+      if (
+        product.link !== "Link não encontrado" ||
+        product.price !== "Preço não encontrado" ||
+        product.title !== "Título não encontrado"
+      ) {
         products.push(product);
       }
     }
@@ -163,6 +183,23 @@ async function sendEmbedForStore(
   baseUrl
 ) {
   try {
+    if (products.length === 1 && products[0].price === "Preço não encontrado") {
+      // Envia um embed para informar que nenhum produto foi encontrado
+      const embedNotFound = {
+        color: 0xff0000, // Usa a cor especificada para o embed
+        title: `Nenhum resultado encontrado em ${storeName}`,
+        description: `Sua busca por "${query}" não encontrou nenhum produto em ${storeName}. Tente modificar sua pesquisa ou [clique aqui para tentar novamente](${baseUrl}${encodeURIComponent(
+          query
+        )}).`,
+        timestamp: new Date().toISOString(),
+        footer: {
+          text: "Tente usar termos diferentes ou mais específicos.",
+        },
+      };
+
+      await message.channel.send({ embeds: [embedNotFound] });
+      return;
+    }
     let currency = "R$ "; // Ajuste conforme necessário para outras lojas
     let description =
       formatProducts(products, currency) +
