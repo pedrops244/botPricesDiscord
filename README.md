@@ -1,4 +1,4 @@
-# Apresentando o Bot de Pesquisa de Preços no Discord
+# Bot de Pesquisa de Preços no Discord
 
 Com entusiasmo, apresento meu mais recente projeto: um bot desenvolvido em Node.js, utilizando a avançada biblioteca Selenium, para oferecer uma solução eficiente e prática para pesquisas de preços de produtos diretamente no Discord.
 
