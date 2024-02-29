@@ -23,5 +23,3 @@ Este bot inteligente foi criado com o propósito de simplificar a busca por pre�
 - **Selenium:** A utilização da biblioteca Selenium permitiu a automação eficiente das interações com os sites de comércio eletrônico, garantindo resultados precisos e atualizados.
 
 - **Discord.js:** A biblioteca Discord.js foi essencial para a integração perfeita do bot com a plataforma Discord, facilitando a comunicação e interação com os usuários.
-
-Espero que esta descrição seja útil para a pasta do seu bot! Se precisar de mais alguma coisa, estou à disposição.
