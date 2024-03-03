@@ -35,7 +35,14 @@ export async function fetchProducts(
   titleSelector
 ) {
   const browser = await puppeteer.launch({
-    args: ["--no-sandbox"],
+    args: [
+      "--no-sandbox",
+      "--disable-gpu",
+      "--disable-dev-shm-usage",
+      "--enable-chrome-browser-cloud-management",
+      "--incognito",
+      "--headless",
+    ],
   });
   const page = await browser.newPage();
 
