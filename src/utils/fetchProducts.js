@@ -1,25 +1,28 @@
-import { By, until } from "selenium-webdriver";
-import { createWebDriver } from "../config/webdriver.js";
+import puppeteer from "puppeteer";
 import { noProductResponse } from "./noProductResponse.js";
 
 async function extractProductData(
-  productElement,
+  page,
   linkSelector,
   priceSelector,
   titleSelector
 ) {
-  const link = await productElement
-    .findElement(By.css(linkSelector))
-    .getAttribute("href")
+  const link = await page
+    .$eval(linkSelector, (element) => element.href)
     .catch(() => "Link não encontrado");
-  const price = await productElement
-    .findElement(By.css(priceSelector))
-    .getText()
+  let price = await page
+    .$eval(priceSelector, (element) => element.textContent.trim())
     .catch(() => "Preço não encontrado");
-  const title = await productElement
-    .findElement(By.css(titleSelector))
-    .getText()
+
+  // Filtro apenas para a Amazon e remoção da vírgula no final do preço
+  if (link.includes("amazon.com")) {
+    price = price.replace(/,$/, "");
+  }
+
+  const title = await page
+    .$eval(titleSelector, (element) => element.textContent)
     .catch(() => "Título não encontrado");
+
   return { link, price, title };
 }
 
@@ -31,37 +34,43 @@ export async function fetchProducts(
   priceSelector,
   titleSelector
 ) {
-  const driver = await createWebDriver();
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
 
   try {
     const formattedQuery = url.includes("amazon.com.br")
       ? query.replace(/ /g, "+")
       : encodeURIComponent(query);
-    await driver.get(url + formattedQuery);
+    await page.goto(url + formattedQuery);
 
     const isEmptyOrTimeout = await Promise.race([
-      driver
-        .findElements(By.css("div#listingEmpty, div.ui-search-icon--not-found"))
-        .then((elements) => elements.length > 0),
-      driver.wait(until.elementLocated(By.css(linkSelector)), 10000).then(
-        () => false,
-        () => true
-      ),
+      page
+        .$eval(
+          "div#listingEmpty, div.ui-search-icon--not-found",
+          (elements) => elements.length > 0
+        )
+        .then(() => true)
+        .catch(() => false),
+      page
+        .waitForSelector(linkSelector, { timeout: 10000 })
+        .then(() => false)
+        .catch(() => true),
     ]);
+
     if (isEmptyOrTimeout) {
       return noProductResponse();
     }
-    await driver
-      .wait(until.elementLocated(By.css(linkSelector)), 10000)
-      .catch(() => {});
-    const productElements = await driver.findElements(By.css(cardSelector));
 
-    if (productElements.length === 0) return noProductResponse();
+    const productElements = await page.$$(cardSelector);
+
+    if (productElements.length === 0) {
+      return noProductResponse();
+    }
 
     const products = await Promise.all(
       productElements
         .slice(0, 5)
-        .map((element) =>
+        .map(async (element) =>
           extractProductData(
             element,
             linkSelector,
@@ -76,6 +85,6 @@ export async function fetchProducts(
       noProductResponse()
     );
   } finally {
-    await driver.quit();
+    await browser.close();
   }
 }
