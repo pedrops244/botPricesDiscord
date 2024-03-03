@@ -35,7 +35,7 @@ export async function fetchProducts(
   titleSelector
 ) {
   const browser = await puppeteer.launch({
-    args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    args: ["--no-sandbox"],
   });
   const page = await browser.newPage();
 
