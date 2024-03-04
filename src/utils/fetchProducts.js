@@ -50,6 +50,7 @@ export async function fetchProducts(
     const formattedQuery = url.includes("amazon.com.br")
       ? query.replace(/ /g, "+")
       : encodeURIComponent(query);
+    console.log(query);
     await page.goto(url + formattedQuery);
 
     const isEmptyOrTimeout = await Promise.race([
